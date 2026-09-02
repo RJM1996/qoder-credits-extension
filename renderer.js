@@ -30,6 +30,8 @@ function initRenderer() {
     summaryBar: document.getElementById('summaryBar'),
     totalCredits: document.getElementById('totalCredits'),
     totalCost: document.getElementById('totalCost'),
+    dailyAvgCredits: document.getElementById('dailyAvgCredits'),
+    dailyAvgCost: document.getElementById('dailyAvgCost'),
     content: document.getElementById('content'),
     loadingState: document.getElementById('loadingState'),
     loadingText: document.getElementById('loadingText'),
@@ -37,8 +39,7 @@ function initRenderer() {
     errorText: document.getElementById('errorText'),
     emptyState: document.getElementById('emptyState'),
     tableWrap: document.getElementById('tableWrap'),
-    tableBody: document.getElementById('tableBody'),
-    tableFoot: document.getElementById('tableFoot')
+    tableBody: document.getElementById('tableBody')
   };
 }
 
@@ -102,6 +103,17 @@ function formatCost(value) {
 }
 
 /**
+ * 格式化人民币金额（美元 * 7.2，保留两位小数，带 ¥ 前缀）
+ *
+ * @param {number} value - 美元金额
+ * @returns {string} 格式化后的人民币金额字符串
+ */
+function formatCostCNY(value) {
+  const cny = (Number(value) || 0) * 7.2;
+  return '¥' + cny.toFixed(2);
+}
+
+/**
  * 格式化积分（取整，千分位）
  *
  * @param {number} value - 积分
@@ -130,13 +142,11 @@ function formatDiscount(value) {
  * @param {string} date - 日期
  * @param {string} modelCategory - 模型类别
  * @param {number} credits - 积分
- * @param {number} cost - 花费
- * @param {number} originalCost - 原始花费
- * @param {number} discountFactor - 折扣因子
+ * @param {number} cost - 花费（美元）
  * @param {string} [rowClass] - 额外的行 class
  * @returns {HTMLTableRowElement} 表格行元素
  */
-function createRow(date, modelCategory, credits, cost, originalCost, discountFactor, rowClass) {
+function createRow(date, modelCategory, credits, cost, rowClass) {
   const tr = document.createElement('tr');
   if (rowClass) {
     tr.className = rowClass;
@@ -147,8 +157,7 @@ function createRow(date, modelCategory, credits, cost, originalCost, discountFac
     <td class="col-model">${modelCategory}</td>
     <td class="col-credits">${formatCredits(credits)}</td>
     <td class="col-cost">${formatCost(cost)}</td>
-    <td class="col-orig-cost">${formatCost(originalCost)}</td>
-    <td class="col-discount">${formatDiscount(discountFactor)}</td>
+    <td class="col-cost-cny">${formatCostCNY(cost)}</td>
   `;
 
   return tr;
@@ -164,7 +173,7 @@ function createRow(date, modelCategory, credits, cost, originalCost, discountFac
 function createSectionRow(title, isCharged) {
   const tr = document.createElement('tr');
   tr.className = isCharged ? 'row-section row-section--charged' : 'row-section row-section--not-charged';
-  tr.innerHTML = `<td colspan="6">${title}</td>`;
+  tr.innerHTML = `<td colspan="5">${title}</td>`;
   return tr;
 }
 
@@ -184,8 +193,7 @@ function createSubtotalRow(date, credits, cost) {
     <td class="col-model" style="font-style:italic;">小计</td>
     <td class="col-credits">${formatCredits(credits)}</td>
     <td class="col-cost">${formatCost(cost)}</td>
-    <td class="col-orig-cost">—</td>
-    <td class="col-discount">—</td>
+    <td class="col-cost-cny">${formatCostCNY(cost)}</td>
   `;
   return tr;
 }
@@ -195,10 +203,9 @@ function createSubtotalRow(date, credits, cost) {
  *
  * 渲染流程：
  *   1. 清空表格 body 和 foot
- *   2. 更新汇总行
- *   3. 遍历 days，每天内先渲染 Charged 分区，再渲染 Not Charged 分区
+ *   2. 更新汇总行（含日均）
+ *   3. 遍历 days，只渲染 Charged 分区
  *   4. 每天末尾添加小计行
- *   5. 表尾添加日均统计行
  *
  * @param {object} aggregatedData - 聚合后的数据（来自 aggregator.js）
  * @param {boolean} isComplete - 数据是否完整（false = 分页被截断）
@@ -216,19 +223,17 @@ function renderTable(aggregatedData, isComplete) {
 
   // 清空表格
   dom.tableBody.innerHTML = '';
-  dom.tableFoot.innerHTML = '';
 
-  // 更新汇总行
+  // 更新汇总行（含日均）
   dom.totalCredits.textContent = formatCredits(summary.totalCredits);
   dom.totalCost.textContent = formatCost(summary.totalCost);
+  dom.dailyAvgCredits.textContent = formatCredits(summary.dailyAvgCredits);
+  dom.dailyAvgCost.textContent = formatCost(summary.dailyAvgCost);
 
-  // 遍历每天数据
+  // 遍历每天数据，只渲染 Charged
   for (const day of days) {
-    // 分离 Charged 和 Not Charged 类别
     const chargedCats = day.categories.filter(c => c.isCharged);
-    const notChargedCats = day.categories.filter(c => !c.isCharged);
 
-    // 渲染 Charged 分区
     if (chargedCats.length > 0) {
       dom.tableBody.appendChild(createSectionRow('Charged', true));
       for (const cat of chargedCats) {
@@ -236,24 +241,7 @@ function renderTable(aggregatedData, isComplete) {
           day.date,
           cat.modelCategory,
           cat.credits,
-          cat.cost,
-          cat.originalCost,
-          cat.discountFactor
-        ));
-      }
-    }
-
-    // 渲染 Not Charged 分区
-    if (notChargedCats.length > 0) {
-      dom.tableBody.appendChild(createSectionRow('Not Charged', false));
-      for (const cat of notChargedCats) {
-        dom.tableBody.appendChild(createRow(
-          day.date,
-          cat.modelCategory,
-          cat.credits,
-          cat.cost,
-          cat.originalCost,
-          cat.discountFactor
+          cat.cost
         ));
       }
     }
@@ -262,24 +250,12 @@ function renderTable(aggregatedData, isComplete) {
     dom.tableBody.appendChild(createSubtotalRow(day.date, day.totalCredits, day.totalCost));
   }
 
-  // 表尾：日均统计行
-  const footTr = document.createElement('tr');
-  footTr.innerHTML = `
-    <td class="col-date">日均</td>
-    <td class="col-model" style="font-style:italic;">${summary.dayCount} 天</td>
-    <td class="col-credits">${formatCredits(summary.dailyAvgCredits)}</td>
-    <td class="col-cost">${formatCost(summary.dailyAvgCost)}</td>
-    <td class="col-orig-cost">—</td>
-    <td class="col-discount">—</td>
-  `;
-  dom.tableFoot.appendChild(footTr);
-
   // 如果数据不完整，添加提示行
   if (!isComplete) {
     const warnTr = document.createElement('tr');
     warnTr.style.cssText = 'background:#fff3cd;';
     warnTr.innerHTML = `
-      <td colspan="6" style="color:#856404;font-style:italic;text-align:center;padding:6px;">
+      <td colspan="5" style="color:#856404;font-style:italic;text-align:center;padding:6px;">
         ⚠ 数据量过大（超过 ${window.QoderAPI.MAX_PAGES} 页），仅显示部分数据，建议缩小时间范围
       </td>
     `;

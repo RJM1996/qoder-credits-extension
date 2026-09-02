@@ -28,7 +28,7 @@ let rangeButtons = [];
 /**
  * 设置时间范围按钮的 active 状态
  *
- * @param {string} range - 'today' | '7days' | '30days'
+ * @param {string} range - 'yesterday' | 'today' | '7days' | '30days'
  */
 function setActiveButton(range) {
   rangeButtons.forEach(btn => {

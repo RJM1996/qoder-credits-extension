@@ -14,6 +14,7 @@
 
   <!-- 时间范围按钮组 -->
   <nav class="range-bar">
+    <button class="range-btn" data-range="yesterday">昨天</button>
     <button class="range-btn" data-range="today">今天</button>
     <button class="range-btn" data-range="7days">近7天</button>
     <button class="range-btn" data-range="30days">近30天</button>
@@ -23,6 +24,8 @@
   <section class="summary-bar" id="summaryBar">
     <span class="summary-item">总积分: <strong id="totalCredits">—</strong></span>
     <span class="summary-item">总花费: <strong id="totalCost">—</strong></span>
+    <span class="summary-item">日均积分: <strong id="dailyAvgCredits">—</strong></span>
+    <span class="summary-item">日均花费: <strong id="dailyAvgCost">—</strong></span>
   </section>
 
   <!-- 主内容区（表格 / loading / error） -->
@@ -53,16 +56,12 @@
             <th class="col-model">模型类别</th>
             <th class="col-credits">积分</th>
             <th class="col-cost">花费</th>
-            <th class="col-orig-cost">原始花费</th>
-            <th class="col-discount">折扣因子</th>
+            <th class="col-cost-cny">花费(¥)</th>
           </tr>
         </thead>
         <tbody id="tableBody">
           <!-- 表格行由 renderer.js 动态生成 -->
         </tbody>
-        <tfoot id="tableFoot">
-          <!-- 日均统计行由 renderer.js 动态生成 -->
-        </tfoot>
       </table>
     </div>
   </main>

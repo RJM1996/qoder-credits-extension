@@ -44,6 +44,11 @@ function getTimeRange(preset) {
   start.setHours(0, 0, 0, 0);
 
   switch (preset) {
+    case 'yesterday':
+      start.setDate(start.getDate() - 1);
+      end.setDate(end.getDate() - 1);
+      end.setHours(23, 59, 59, 999);
+      break;
     case 'today':
       // start 已是今天 00:00:00
       break;
