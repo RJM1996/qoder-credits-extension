@@ -113,8 +113,10 @@ function aggregate(records) {
       summary: {
         totalCredits: 0,
         totalCost: 0,
+        totalCalls: 0,
         dailyAvgCredits: 0,
         dailyAvgCost: 0,
+        dailyAvgCalls: 0,
         chargedCredits: 0,
         chargedCost: 0,
         notChargedCredits: 0,
@@ -231,6 +233,7 @@ function aggregate(records) {
   const dayCount = days.length;
   let totalCredits = 0;
   let totalCost = 0;
+  let totalCalls = 0;
   let chargedCredits = 0;
   let chargedCost = 0;
   let notChargedCredits = 0;
@@ -241,6 +244,7 @@ function aggregate(records) {
     totalCost += day.totalCost;
 
     for (const cat of day.categories) {
+      totalCalls += cat.recordCount;
       if (cat.isCharged) {
         chargedCredits += cat.credits;
         chargedCost += cat.cost;
@@ -255,8 +259,10 @@ function aggregate(records) {
     summary: {
       totalCredits,
       totalCost,
+      totalCalls,
       dailyAvgCredits: dayCount > 0 ? Math.round(totalCredits / dayCount) : 0,
       dailyAvgCost: dayCount > 0 ? Math.round(totalCost / dayCount * 100) / 100 : 0,
+      dailyAvgCalls: dayCount > 0 ? Math.round(totalCalls / dayCount) : 0,
       chargedCredits,
       chargedCost,
       notChargedCredits,

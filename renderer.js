@@ -30,8 +30,10 @@ function initRenderer() {
     summaryBar: document.getElementById('summaryBar'),
     totalCredits: document.getElementById('totalCredits'),
     totalCost: document.getElementById('totalCost'),
+    totalCalls: document.getElementById('totalCalls'),
     dailyAvgCredits: document.getElementById('dailyAvgCredits'),
     dailyAvgCost: document.getElementById('dailyAvgCost'),
+    dailyAvgCalls: document.getElementById('dailyAvgCalls'),
     content: document.getElementById('content'),
     loadingState: document.getElementById('loadingState'),
     loadingText: document.getElementById('loadingText'),
@@ -143,10 +145,11 @@ function formatDiscount(value) {
  * @param {string} modelCategory - 模型类别
  * @param {number} credits - 积分
  * @param {number} cost - 花费（美元）
+ * @param {number} calls - 调用次数
  * @param {string} [rowClass] - 额外的行 class
  * @returns {HTMLTableRowElement} 表格行元素
  */
-function createRow(date, modelCategory, credits, cost, rowClass) {
+function createRow(date, modelCategory, credits, cost, calls, rowClass) {
   const tr = document.createElement('tr');
   if (rowClass) {
     tr.className = rowClass;
@@ -158,6 +161,7 @@ function createRow(date, modelCategory, credits, cost, rowClass) {
     <td class="col-credits">${formatCredits(credits)}</td>
     <td class="col-cost">${formatCost(cost)}</td>
     <td class="col-cost-cny">${formatCostCNY(cost)}</td>
+    <td class="col-calls">${calls}</td>
   `;
 
   return tr;
@@ -173,7 +177,7 @@ function createRow(date, modelCategory, credits, cost, rowClass) {
 function createSectionRow(title, isCharged) {
   const tr = document.createElement('tr');
   tr.className = isCharged ? 'row-section row-section--charged' : 'row-section row-section--not-charged';
-  tr.innerHTML = `<td colspan="5">${title}</td>`;
+  tr.innerHTML = `<td colspan="6">${title}</td>`;
   return tr;
 }
 
@@ -185,7 +189,7 @@ function createSectionRow(title, isCharged) {
  * @param {number} cost - 当天总花费
  * @returns {HTMLTableRowElement} 小计行
  */
-function createSubtotalRow(date, credits, cost) {
+function createSubtotalRow(date, credits, cost, calls) {
   const tr = document.createElement('tr');
   tr.className = 'row-subtotal';
   tr.innerHTML = `
@@ -194,6 +198,7 @@ function createSubtotalRow(date, credits, cost) {
     <td class="col-credits">${formatCredits(credits)}</td>
     <td class="col-cost">${formatCost(cost)}</td>
     <td class="col-cost-cny">${formatCostCNY(cost)}</td>
+    <td class="col-calls">${calls}</td>
   `;
   return tr;
 }
@@ -224,11 +229,13 @@ function renderTable(aggregatedData, isComplete) {
   // 清空表格
   dom.tableBody.innerHTML = '';
 
-  // 更新汇总行（含日均）
+  // 更新汇总行（含日均，花费显示人民币）
   dom.totalCredits.textContent = formatCredits(summary.totalCredits);
-  dom.totalCost.textContent = formatCost(summary.totalCost);
+  dom.totalCost.textContent = formatCostCNY(summary.totalCost);
+  dom.totalCalls.textContent = summary.totalCalls;
   dom.dailyAvgCredits.textContent = formatCredits(summary.dailyAvgCredits);
-  dom.dailyAvgCost.textContent = formatCost(summary.dailyAvgCost);
+  dom.dailyAvgCost.textContent = formatCostCNY(summary.dailyAvgCost);
+  dom.dailyAvgCalls.textContent = summary.dailyAvgCalls;
 
   // 遍历每天数据，只渲染 Charged
   for (const day of days) {
@@ -241,13 +248,18 @@ function renderTable(aggregatedData, isComplete) {
           day.date,
           cat.modelCategory,
           cat.credits,
-          cat.cost
+          cat.cost,
+          cat.recordCount
         ));
       }
     }
 
-    // 每天末尾小计行
-    dom.tableBody.appendChild(createSubtotalRow(day.date, day.totalCredits, day.totalCost));
+    // 每天末尾小计行（计算当天 Charged 调用次数）
+    let dayCalls = 0;
+    for (const cat of chargedCats) {
+      dayCalls += cat.recordCount;
+    }
+    dom.tableBody.appendChild(createSubtotalRow(day.date, day.totalCredits, day.totalCost, dayCalls));
   }
 
   // 如果数据不完整，添加提示行
@@ -255,7 +267,7 @@ function renderTable(aggregatedData, isComplete) {
     const warnTr = document.createElement('tr');
     warnTr.style.cssText = 'background:#fff3cd;';
     warnTr.innerHTML = `
-      <td colspan="5" style="color:#856404;font-style:italic;text-align:center;padding:6px;">
+      <td colspan="6" style="color:#856404;font-style:italic;text-align:center;padding:6px;">
         ⚠ 数据量过大（超过 ${window.QoderAPI.MAX_PAGES} 页），仅显示部分数据，建议缩小时间范围
       </td>
     `;

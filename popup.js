@@ -12,7 +12,7 @@
  *
  * 关键约束：
  *   - 用户快速切换时间范围时取消上一个请求（AbortController）
- *   - popup 关闭后状态不保留，每次打开重新请求
+ *   - "今天"面板每次都重新请求，其他面板数据缓存一天
  * ============================================================
  */
 
@@ -24,6 +24,65 @@ let currentAbortController = null;
 
 /** DOM 元素引用 */
 let rangeButtons = [];
+
+/**
+ * 缓存管理
+ *
+ * 缓存策略：
+ *   - "今天"不缓存，每次都重新请求
+ *   - 其他面板（昨天/近7天/近30天）缓存到 chrome.storage.local
+ *   - 缓存 key 格式：cache_<range>_<YYYY-MM-DD>
+ *   - 缓存含 records + isComplete + 聚合结果，当天有效
+ */
+
+/**
+ * 获取今天的日期字符串（YYYY-MM-DD，本地时区）
+ *
+ * @returns {string}
+ */
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * 生成缓存 key
+ *
+ * @param {string} range - 时间范围
+ * @returns {string}
+ */
+function getCacheKey(range) {
+  return `cache_${range}_${getTodayStr()}`;
+}
+
+/**
+ * 从缓存读取数据
+ *
+ * @param {string} range - 时间范围
+ * @returns {Promise<object|null>} 缓存数据 { records, isComplete, aggregated } 或 null
+ */
+async function getCache(range) {
+  return new Promise(resolve => {
+    chrome.storage.local.get(getCacheKey(range), result => {
+      resolve(result[getCacheKey(range)] || null);
+    });
+  });
+}
+
+/**
+ * 写入缓存
+ *
+ * @param {string} range - 时间范围
+ * @param {object} data - { records, isComplete, aggregated }
+ */
+async function setCache(range, data) {
+  const key = getCacheKey(range);
+  const obj = {};
+  obj[key] = data;
+  return new Promise(resolve => {
+    chrome.storage.local.set(obj, resolve);
+  });
+}
 
 /**
  * 设置时间范围按钮的 active 状态
@@ -58,10 +117,11 @@ function setButtonsDisabled(disabled) {
  *   1. 取消上一个正在进行的请求（如果有）
  *   2. 创建新的 AbortController
  *   3. 显示 loading 状态
- *   4. 调用 api.js 获取数据
- *   5. 调用 aggregator.js 聚合
- *   6. 调用 renderer.js 渲染
- *   7. 异常时显示错误状态
+ *   4. "今天"每次都请求；其他面板先查缓存，命中则直接渲染
+ *   5. 缓存未命中时调用 api.js 获取数据
+ *   6. 调用 aggregator.js 聚合
+ *   7. 调用 renderer.js 渲染
+ *   8. 异常时显示错误状态
  *
  * @param {string} range - 时间范围预设
  */
@@ -83,6 +143,16 @@ async function loadData(range) {
   setButtonsDisabled(true);
 
   try {
+    // "今天"不缓存，其他面板先查缓存
+    if (range !== 'today') {
+      const cached = await getCache(range);
+      if (cached && cached.aggregated) {
+        // 缓存命中，直接渲染
+        window.QoderRenderer.renderTable(cached.aggregated, cached.isComplete);
+        return;
+      }
+    }
+
     // 计算时间范围
     const { startTime, endTime } = window.QoderAPI.getTimeRange(range);
 
@@ -107,6 +177,11 @@ async function loadData(range) {
 
     // 渲染表格
     window.QoderRenderer.renderTable(aggregated, isComplete);
+
+    // 写入缓存（"今天"不缓存）
+    if (range !== 'today') {
+      await setCache(range, { records, isComplete, aggregated });
+    }
 
   } catch (err) {
     // 如果是 AbortError（用户主动取消），不显示错误

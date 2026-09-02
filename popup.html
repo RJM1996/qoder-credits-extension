@@ -14,18 +14,24 @@
 
   <!-- 时间范围按钮组 -->
   <nav class="range-bar">
-    <button class="range-btn" data-range="yesterday">昨天</button>
     <button class="range-btn" data-range="today">今天</button>
+    <button class="range-btn" data-range="yesterday">昨天</button>
     <button class="range-btn" data-range="7days">近7天</button>
     <button class="range-btn" data-range="30days">近30天</button>
   </nav>
 
   <!-- 汇总行 -->
   <section class="summary-bar" id="summaryBar">
-    <span class="summary-item">总积分: <strong id="totalCredits">—</strong></span>
-    <span class="summary-item">总花费: <strong id="totalCost">—</strong></span>
-    <span class="summary-item">日均积分: <strong id="dailyAvgCredits">—</strong></span>
-    <span class="summary-item">日均花费: <strong id="dailyAvgCost">—</strong></span>
+    <div class="summary-row">
+      <span class="summary-item"><span class="summary-label">总积分</span><strong id="totalCredits">—</strong></span>
+      <span class="summary-item"><span class="summary-label">总花费</span><strong id="totalCost">—</strong></span>
+      <span class="summary-item"><span class="summary-label">总调用</span><strong id="totalCalls">—</strong></span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-item"><span class="summary-label">日均积分</span><strong id="dailyAvgCredits">—</strong></span>
+      <span class="summary-item"><span class="summary-label">日均花费</span><strong id="dailyAvgCost">—</strong></span>
+      <span class="summary-item"><span class="summary-label">日均调用</span><strong id="dailyAvgCalls">—</strong></span>
+    </div>
   </section>
 
   <!-- 主内容区（表格 / loading / error） -->
@@ -57,6 +63,7 @@
             <th class="col-credits">积分</th>
             <th class="col-cost">花费</th>
             <th class="col-cost-cny">花费(¥)</th>
+            <th class="col-calls">调用次数</th>
           </tr>
         </thead>
         <tbody id="tableBody">

@@ -31,7 +31,7 @@ body {
 .header {
   flex-shrink: 0;
   padding: 10px 16px;
-  background: #1a1a1a;
+  background: #4b9a40;
   color: #fff;
 }
 
@@ -73,8 +73,8 @@ body {
 }
 
 .range-btn--active {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
+  background: #4b9a40;
+  border-color: #4b9a40;
   color: #fff;
   font-weight: 600;
 }
@@ -88,22 +88,38 @@ body {
 .summary-bar {
   flex-shrink: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 16px;
-  background: #fafafa;
+  background: #f0f9ee;
   border-bottom: 1px solid #e0e0e0;
 }
 
+.summary-row {
+  display: flex;
+  gap: 24px;
+}
+
 .summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 180px;
   font-size: 12px;
   color: #999;
+}
+
+.summary-label {
+  width: 72px;
+  flex-shrink: 0;
+  text-align: right;
 }
 
 .summary-item strong {
   color: #1a1a1a;
   font-size: 14px;
   font-weight: 700;
+  min-width: 100px;
 }
 
 /* ---------- 主内容区 ---------- */
@@ -139,7 +155,7 @@ body {
   width: 24px;
   height: 24px;
   border: 2px solid #eee;
-  border-top-color: #1a1a1a;
+  border-top-color: #4b9a40;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -154,7 +170,7 @@ body {
   padding: 6px 20px;
   border: none;
   border-radius: 6px;
-  background: #1a1a1a;
+  background: #4b9a40;
   color: #fff;
   font-size: 12px;
   cursor: pointer;
@@ -162,7 +178,7 @@ body {
 }
 
 .btn-retry:hover {
-  background: #333;
+  background: #3d8335;
 }
 
 /* ---------- 表格 ---------- */
@@ -205,31 +221,33 @@ body {
 .col-credits    { width: 70px; text-align: right; }
 .col-cost       { width: 70px; text-align: right; }
 .col-cost-cny   { width: 80px; text-align: right; }
+.col-calls      { width: 60px; text-align: right; }
 
 /* 数字列右对齐 */
 .data-table td.col-credits,
 .data-table td.col-cost,
-.data-table td.col-cost-cny {
+.data-table td.col-cost-cny,
+.data-table td.col-calls {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 /* ---------- 分区标题行（Charged） ---------- */
 .row-section {
-  background: #f5f5f5;
+  background: #f0f9ee;
 }
 
 .row-section td {
   padding: 5px 8px;
   font-weight: 600;
   font-size: 11px;
-  color: #2d8a4e;
+  color: #3d8335;
   border-bottom: 1px solid #e0e0e0;
 }
 
 /* ---------- 每天小计行 ---------- */
 .row-subtotal td {
-  background: #f5f5f5;
+  background: #f0f9ee;
   font-weight: 600;
   color: #1a1a1a;
   border-top: 1px solid #e0e0e0;
