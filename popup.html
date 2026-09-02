@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qoder 积分用量</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 标题栏 -->
+  <header class="header">
+    <h1 class="header__title">Qoder 积分用量</h1>
+  </header>
+
+  <!-- 时间范围按钮组 -->
+  <nav class="range-bar">
+    <button class="range-btn" data-range="today">今天</button>
+    <button class="range-btn" data-range="7days">近7天</button>
+    <button class="range-btn" data-range="30days">近30天</button>
+  </nav>
+
+  <!-- 汇总行 -->
+  <section class="summary-bar" id="summaryBar">
+    <span class="summary-item">总积分: <strong id="totalCredits">—</strong></span>
+    <span class="summary-item">总花费: <strong id="totalCost">—</strong></span>
+  </section>
+
+  <!-- 主内容区（表格 / loading / error） -->
+  <main class="content" id="content">
+    <!-- loading 状态 -->
+    <div class="state state--loading" id="loadingState" style="display:none;">
+      <div class="spinner"></div>
+      <p class="state__text" id="loadingText">加载中…</p>
+    </div>
+
+    <!-- error 状态 -->
+    <div class="state state--error" id="errorState" style="display:none;">
+      <p class="state__text" id="errorText">出错了</p>
+      <button class="btn-retry" id="retryBtn">重试</button>
+    </div>
+
+    <!-- 空数据状态 -->
+    <div class="state state--empty" id="emptyState" style="display:none;">
+      <p class="state__text">所选时间范围内无积分使用记录</p>
+    </div>
+
+    <!-- 表格容器 -->
+    <div class="table-wrap" id="tableWrap" style="display:none;">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th class="col-date">日期</th>
+            <th class="col-model">模型类别</th>
+            <th class="col-credits">积分</th>
+            <th class="col-cost">花费</th>
+            <th class="col-orig-cost">原始花费</th>
+            <th class="col-discount">折扣因子</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- 表格行由 renderer.js 动态生成 -->
+        </tbody>
+        <tfoot id="tableFoot">
+          <!-- 日均统计行由 renderer.js 动态生成 -->
+        </tfoot>
+      </table>
+    </div>
+  </main>
+
+  <!-- JS 模块（按依赖顺序加载） -->
+  <script src="api.js"></script>
+  <script src="aggregator.js"></script>
+  <script src="renderer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
