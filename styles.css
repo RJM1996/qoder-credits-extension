@@ -232,7 +232,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- 分区标题行（Charged） ---------- */
+/* ---------- 分区标题行 ---------- */
 .row-section {
   background: #f0f9ee;
 }
@@ -243,6 +243,10 @@ body {
   font-size: 11px;
   color: #3d8335;
   border-bottom: 1px solid #e0e0e0;
+}
+
+.row-section--not-charged td {
+  color: #999;
 }
 
 /* ---------- 每天小计行 ---------- */

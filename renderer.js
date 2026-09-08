@@ -237,10 +237,12 @@ function renderTable(aggregatedData, isComplete) {
   dom.dailyAvgCost.textContent = formatCostCNY(summary.dailyAvgCost);
   dom.dailyAvgCalls.textContent = summary.dailyAvgCalls;
 
-  // 遍历每天数据，只渲染 Charged
+  // 遍历每天数据，渲染 Charged 和 Not Charged
   for (const day of days) {
     const chargedCats = day.categories.filter(c => c.isCharged);
+    const notChargedCats = day.categories.filter(c => !c.isCharged);
 
+    // 渲染 Charged 分区
     if (chargedCats.length > 0) {
       dom.tableBody.appendChild(createSectionRow('Charged', true));
       for (const cat of chargedCats) {
@@ -254,9 +256,23 @@ function renderTable(aggregatedData, isComplete) {
       }
     }
 
-    // 每天末尾小计行（计算当天 Charged 调用次数）
+    // 渲染 Not Charged 分区
+    if (notChargedCats.length > 0) {
+      dom.tableBody.appendChild(createSectionRow('Not Charged', false));
+      for (const cat of notChargedCats) {
+        dom.tableBody.appendChild(createRow(
+          day.date,
+          cat.modelCategory,
+          cat.credits,
+          cat.cost,
+          cat.recordCount
+        ));
+      }
+    }
+
+    // 每天末尾小计行（当天所有调用次数）
     let dayCalls = 0;
-    for (const cat of chargedCats) {
+    for (const cat of day.categories) {
       dayCalls += cat.recordCount;
     }
     dom.tableBody.appendChild(createSubtotalRow(day.date, day.totalCredits, day.totalCost, dayCalls));
