@@ -9,6 +9,8 @@
  *   3. 按天渲染表格行，每天内按 model_category 分组
  *   4. 用分区标题区分 Charged / Not Charged
  *   5. 渲染 loading 状态和错误状态
+ *   6. 渲染顶部配额卡片（已用/总量/剩余/百分比/进度条/每日可用规划）
+ *   7. 登录过期（401/403）时显示"去登录"按钮
  *
  * 渲染规则：
  *   - 表格列：日期 | 模型类别 | 积分 | 花费 | 原始花费 | 折扣因子
@@ -41,7 +43,18 @@ function initRenderer() {
     errorText: document.getElementById('errorText'),
     emptyState: document.getElementById('emptyState'),
     tableWrap: document.getElementById('tableWrap'),
-    tableBody: document.getElementById('tableBody')
+    tableBody: document.getElementById('tableBody'),
+    // 配额卡片
+    quotaCard: document.getElementById('quotaCard'),
+    quotaUsed: document.getElementById('quotaUsed'),
+    quotaLimit: document.getElementById('quotaLimit'),
+    quotaRemaining: document.getElementById('quotaRemaining'),
+    quotaPercentage: document.getElementById('quotaPercentage'),
+    quotaProgressBar: document.getElementById('quotaProgressBar'),
+    quotaUnit: document.getElementById('quotaUnit'),
+    quotaPlan: document.getElementById('quotaPlan'),
+    // 登录过期按钮
+    loginBtn: document.getElementById('loginBtn')
   };
 }
 
@@ -77,12 +90,19 @@ function showLoading(text, loadedCount) {
  * 显示错误状态
  *
  * @param {string} message - 错误消息
+ * @param {boolean} [isAuthError] - 是否为登录过期（401/403），true 时显示"去登录"按钮
  */
-function showError(message) {
+function showError(message, isAuthError) {
   if (!dom) return;
   hideAllStates();
   dom.errorState.style.display = 'flex';
   dom.errorText.textContent = message || '未知错误';
+  // 登录过期时显示"去登录"按钮
+  if (isAuthError && dom.loginBtn) {
+    dom.loginBtn.style.display = 'inline-block';
+  } else if (dom.loginBtn) {
+    dom.loginBtn.style.display = 'none';
+  }
 }
 
 /**
@@ -295,6 +315,46 @@ function renderTable(aggregatedData, isComplete) {
   dom.tableWrap.style.display = 'block';
 }
 
+/**
+ * 渲染配额卡片（当前周期使用量与余量 + 每日可用规划）
+ *
+ * 渲染内容：
+ *   1. 已用 X / 总量 Y、剩余 Z、使用百分比 + 进度条
+ *   2. 每日可用规划文案（来自 quota.js buildPlan 的 message）
+ *
+ * @param {object} quotaSummary - 配额摘要（remaining_value / used_value / limit_value / usage_percentage / unit）
+ * @param {object} plan - 每日可用规划（来自 quota.js buildPlan）
+ */
+function renderQuotaCard(quotaSummary, plan) {
+  if (!dom || !dom.quotaCard) return;
+
+  const used = Number(quotaSummary.used_value) || 0;
+  const limit = Number(quotaSummary.limit_value) || 0;
+  const remaining = Number(quotaSummary.remaining_value) || 0;
+  const percentage = Number(quotaSummary.usage_percentage) || 0;
+  const unit = quotaSummary.unit || '';
+
+  dom.quotaUsed.textContent = formatCredits(used);
+  dom.quotaLimit.textContent = formatCredits(limit);
+  dom.quotaRemaining.textContent = formatCredits(remaining);
+  dom.quotaPercentage.textContent = `${percentage.toFixed(1)}%`;
+  dom.quotaUnit.textContent = unit ? `（单位：${unit}）` : '';
+
+  // 进度条宽度（0-100，超限封顶 100）
+  const barWidth = Math.min(100, Math.max(0, percentage));
+  dom.quotaProgressBar.style.width = `${barWidth}%`;
+  // 使用率超过 80% 时进度条转为警示色
+  dom.quotaProgressBar.classList.toggle('quota-progress__bar--warn', percentage >= 80);
+
+  // 每日可用规划文案
+  if (dom.quotaPlan) {
+    dom.quotaPlan.textContent = plan ? plan.message : '';
+  }
+
+  // 显示卡片
+  dom.quotaCard.style.display = 'block';
+}
+
 // 暴露到全局
 window.QoderRenderer = {
   initRenderer,
@@ -302,5 +362,6 @@ window.QoderRenderer = {
   showError,
   showEmpty,
   renderTable,
+  renderQuotaCard,
   hideAllStates
 };

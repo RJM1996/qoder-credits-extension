@@ -8,17 +8,22 @@
  *   2. 发起 fetch 请求，携带 cookie（credentials: 'include'）
  *   3. 处理分页：检查 page_result.next_token，非空则继续请求
  *   4. 合并所有分页的 data 数组，返回完整 records
+ *   5. 拉取当前周期积分配额（organization-shared-usages）
  *
  * 关键约束：
  *   - 15s 超时（AbortController）
  *   - 最大 50 页限制（防止无限分页）
  *   - 用户快速切换时间范围时取消上一个请求（AbortController）
  *   - credentials: 'include' 确保 cookie 自动携带
+ *   - 401/403 抛出登录过期错误（含状态码标记，供 popup 显示"去登录"按钮）
  * ============================================================
  */
 
 /** API 基础路径 */
 const API_BASE = 'https://qoder.com/api/v1/me/usages/big_model_credits/histories';
+
+/** 配额 API 路径（当前周期积分使用量与余量） */
+const QUOTA_API_URL = 'https://qoder.com/api/v1/me/organization-shared-usages/big_model_credits';
 
 /** 每页条数 */
 const PAGE_SIZE = 100;
@@ -272,10 +277,77 @@ async function fetchAllRecords(startTime, endTime, onProgress, externalSignal) {
   }
 }
 
+/**
+ * 拉取当前周期积分配额（不缓存，每次刷新）
+ *
+ * 读取字段：shared_quota.quota_summary 下的
+ *   - remaining_value（剩余）
+ *   - used_value（已用）
+ *   - limit_value（总量）
+ *   - usage_percentage（使用百分比）
+ *   - unit（单位）
+ *
+ * @param {AbortSignal} [signal] - AbortController 信号（可选）
+ * @returns {Promise<object>} 配额摘要 quota_summary 对象
+ * @throws {Error} 请求失败时抛出；401/403 时抛出带 status 属性的登录过期错误
+ */
+async function fetchQuota(signal) {
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  // 转发外部取消信号
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
+
+  try {
+    const resp = await fetch(QUOTA_API_URL, {
+      method: 'GET',
+      credentials: 'include', // 携带 cookie
+      headers: {
+        'Accept': 'application/json'
+      },
+      signal: controller.signal
+    });
+
+    if (!resp.ok) {
+      const err = new Error(mapHttpError(resp.status));
+      // 标记状态码，供 popup 判断是否显示"去登录"按钮
+      err.status = resp.status;
+      throw err;
+    }
+
+    const json = await resp.json();
+
+    // 校验响应结构
+    const summary = json && json.shared_quota && json.shared_quota.quota_summary;
+    if (!summary) {
+      throw new Error('配额响应数据格式异常');
+    }
+
+    return summary;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('请求超时或已取消，请重试');
+    }
+    if (err instanceof TypeError) {
+      throw new Error('网络连接失败，请检查网络后重试');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
 // 暴露到全局（popup 环境下非 ES module）
 window.QoderAPI = {
   getTimeRange,
   fetchAllRecords,
+  fetchQuota,
   MAX_PAGES,
   REQUEST_TIMEOUT_MS
 };

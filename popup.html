@@ -20,6 +20,36 @@
     <button class="range-btn" data-range="30days">近30天</button>
   </nav>
 
+  <!-- 配额卡片（当前周期使用量与余量 + 每日可用规划） -->
+  <section class="quota-card" id="quotaCard" style="display:none;">
+    <div class="quota-card__title">
+      本周期配额<span class="quota-card__unit" id="quotaUnit"></span>
+    </div>
+    <div class="quota-card__stats">
+      <span class="quota-stat">
+        <span class="quota-stat__label">已用</span>
+        <strong id="quotaUsed">—</strong>
+      </span>
+      <span class="quota-stat quota-stat__divider">/</span>
+      <span class="quota-stat">
+        <span class="quota-stat__label">总量</span>
+        <strong id="quotaLimit">—</strong>
+      </span>
+      <span class="quota-stat">
+        <span class="quota-stat__label">剩余</span>
+        <strong id="quotaRemaining" class="quota-stat__remaining">—</strong>
+      </span>
+      <span class="quota-stat">
+        <span class="quota-stat__label">使用率</span>
+        <strong id="quotaPercentage">—</strong>
+      </span>
+    </div>
+    <div class="quota-progress">
+      <div class="quota-progress__bar" id="quotaProgressBar"></div>
+    </div>
+    <p class="quota-card__plan" id="quotaPlan"></p>
+  </section>
+
   <!-- 汇总行 -->
   <section class="summary-bar" id="summaryBar">
     <div class="summary-row">
@@ -46,6 +76,8 @@
     <div class="state state--error" id="errorState" style="display:none;">
       <p class="state__text" id="errorText">出错了</p>
       <button class="btn-retry" id="retryBtn">重试</button>
+      <!-- 登录过期时显示（401/403） -->
+      <button class="btn-login" id="loginBtn" style="display:none;">去登录</button>
     </div>
 
     <!-- 空数据状态 -->
@@ -76,6 +108,7 @@
   <!-- JS 模块（按依赖顺序加载） -->
   <script src="api.js"></script>
   <script src="aggregator.js"></script>
+  <script src="quota.js"></script>
   <script src="renderer.js"></script>
   <script src="popup.js"></script>
 </body>
